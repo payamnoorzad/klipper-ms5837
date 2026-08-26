@@ -69,6 +69,11 @@ class MS5837Sensor:
         self.last_error = None
         self.samples = []
 
+        # Prevent overlapping / duplicate sensor transactions.
+        # Background sampling owns normal I2C reads; G-code query/status
+        # commands should normally use the latest cached sample.
+        self.reading = False
+
         self.gcode.register_mux_command(
             "MS_PRESSURE_QUERY", "SENSOR", self.name,
             self.cmd_MS_PRESSURE_QUERY,
@@ -234,27 +239,36 @@ class MS5837Sensor:
         return sum(self.samples) / len(self.samples)
 
     def _update_measurement(self):
-        data = self._read_once()
+        # If another read is already in progress, do not start a second
+        # I2C transaction sequence against the MS5837.
+        if self.reading:
+            return False
 
-        filtered = self._apply_filter(data["pressure_mbar"])
-        gauge = None
-        if self.zero_pressure_mbar is not None:
-            gauge = filtered - self.zero_pressure_mbar
+        self.reading = True
+        try:
+            data = self._read_once()
 
-        depth = None
-        if gauge is not None:
-            # 1 mbar = 100 Pa
-            depth = (gauge * 100.0) / (self.fluid_density * 9.80665)
+            filtered = self._apply_filter(data["pressure_mbar"])
+            gauge = None
+            if self.zero_pressure_mbar is not None:
+                gauge = filtered - self.zero_pressure_mbar
 
-        self.last_pressure_mbar = filtered
-        self.last_temperature_c = data["temperature_c"]
-        self.last_gauge_mbar = gauge
-        self.last_depth_m = depth
-        self.last_d1 = data["d1"]
-        self.last_d2 = data["d2"]
-        self.last_error = None
+            depth = None
+            if gauge is not None:
+                # 1 mbar = 100 Pa
+                depth = (gauge * 100.0) / (self.fluid_density * 9.80665)
 
-        return data
+            self.last_pressure_mbar = filtered
+            self.last_temperature_c = data["temperature_c"]
+            self.last_gauge_mbar = gauge
+            self.last_depth_m = depth
+            self.last_d1 = data["d1"]
+            self.last_d2 = data["d2"]
+            self.last_error = None
+
+            return True
+        finally:
+            self.reading = False
 
     def _convert_pressure(self, mbar):
         if self.pressure_unit == "mbar":
@@ -280,7 +294,8 @@ class MS5837Sensor:
 
     def _sample_timer(self, eventtime):
         try:
-            self._update_measurement()
+            if not self.reading:
+                self._update_measurement()
         except Exception as e:
             self.last_error = str(e)
             self.initialized = False
@@ -291,7 +306,14 @@ class MS5837Sensor:
 
     def cmd_MS_PRESSURE_QUERY(self, gcmd):
         try:
-            self._update_measurement()
+            # With auto_start enabled, use the most recent background sample.
+            # Only perform a direct sensor read when no cached sample exists.
+            if self.last_pressure_mbar is None:
+                updated = self._update_measurement()
+                if not updated and self.last_pressure_mbar is None:
+                    raise self.printer.command_error(
+                        "MS5837 sensor read is already in progress"
+                    )
 
             p = self._convert_pressure(self.last_pressure_mbar)
             lines = [
@@ -322,13 +344,19 @@ class MS5837Sensor:
 
         except Exception as e:
             self.last_error = str(e)
-            self.initialized = False
             raise gcmd.error("MS5837 read failed: %s" % e)
 
     def cmd_MS_PRESSURE_ZERO(self, gcmd):
         try:
-            # Take a fresh filtered sample, then use it as zero reference.
-            self._update_measurement()
+            # Use the most recent background sample as the zero reference.
+            # If the sensor has not produced a sample yet, read it once.
+            if self.last_pressure_mbar is None:
+                updated = self._update_measurement()
+                if not updated and self.last_pressure_mbar is None:
+                    raise self.printer.command_error(
+                        "MS5837 sensor read is already in progress"
+                    )
+
             self.zero_pressure_mbar = self.last_pressure_mbar
             self.last_gauge_mbar = 0.0
             self.last_depth_m = 0.0
@@ -339,7 +367,6 @@ class MS5837Sensor:
             )
         except Exception as e:
             self.last_error = str(e)
-            self.initialized = False
             raise gcmd.error("MS5837 zero failed: %s" % e)
 
     def cmd_MS_PRESSURE_STATUS(self, gcmd):
