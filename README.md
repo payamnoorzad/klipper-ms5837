@@ -37,7 +37,7 @@ If the breakout does not include I2C pull-ups, add pull-up resistors from SDA an
 ## Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/klipper-ms5837.git ~/klipper-ms5837
+git clone https://github.com/payamnoorzad/klipper-ms5837.git ~/klipper-ms5837
 cd ~/klipper-ms5837
 ./install.sh
 ```
@@ -201,11 +201,9 @@ After cloning this repository, you may add an Update Manager entry similar to:
 [update_manager klipper-ms5837]
 type: git_repo
 path: ~/klipper-ms5837
-origin: https://github.com/YOUR_USERNAME/klipper-ms5837.git
+origin: https://github.com/payamnoorzad/klipper-ms5837.git
 managed_services: klipper
 ```
-
-Replace `YOUR_USERNAME` with your GitHub username.
 
 ## Troubleshooting
 
