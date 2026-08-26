@@ -2,9 +2,9 @@
 # Supports MS5837-02BA now, with structure ready for MS5837-30BA.
 #
 # G-code commands:
-#   MS5837_QUERY [SENSOR=<name>]
-#   MS5837_ZERO [SENSOR=<name>]
-#   MS5837_STATUS [SENSOR=<name>]
+#   MS_PRESSURE_QUERY [SENSOR=<name>]
+#   MS_PRESSURE_ZERO [SENSOR=<name>]
+#   MS_PRESSURE_STATUS [SENSOR=<name>]
 #
 # Status fields are exported for printer.objects.query.
 
@@ -70,18 +70,18 @@ class MS5837Sensor:
         self.samples = []
 
         self.gcode.register_mux_command(
-            "MS5837_QUERY", "SENSOR", self.name,
-            self.cmd_MS5837_QUERY,
+            "MS_PRESSURE_QUERY", "SENSOR", self.name,
+            self.cmd_MS_PRESSURE_QUERY,
             desc="Read MS5837 pressure and temperature"
         )
         self.gcode.register_mux_command(
-            "MS5837_ZERO", "SENSOR", self.name,
-            self.cmd_MS5837_ZERO,
+            "MS_PRESSURE_ZERO", "SENSOR", self.name,
+            self.cmd_MS_PRESSURE_ZERO,
             desc="Set current MS5837 pressure as zero reference"
         )
         self.gcode.register_mux_command(
-            "MS5837_STATUS", "SENSOR", self.name,
-            self.cmd_MS5837_STATUS,
+            "MS_PRESSURE_STATUS", "SENSOR", self.name,
+            self.cmd_MS_PRESSURE_STATUS,
             desc="Show MS5837 status and calibration information"
         )
 
@@ -289,7 +289,7 @@ class MS5837Sensor:
 
     # ---------- G-code ----------
 
-    def cmd_MS5837_QUERY(self, gcmd):
+    def cmd_MS_PRESSURE_QUERY(self, gcmd):
         try:
             self._update_measurement()
 
@@ -325,7 +325,7 @@ class MS5837Sensor:
             self.initialized = False
             raise gcmd.error("MS5837 read failed: %s" % e)
 
-    def cmd_MS5837_ZERO(self, gcmd):
+    def cmd_MS_PRESSURE_ZERO(self, gcmd):
         try:
             # Take a fresh filtered sample, then use it as zero reference.
             self._update_measurement()
@@ -342,7 +342,7 @@ class MS5837Sensor:
             self.initialized = False
             raise gcmd.error("MS5837 zero failed: %s" % e)
 
-    def cmd_MS5837_STATUS(self, gcmd):
+    def cmd_MS_PRESSURE_STATUS(self, gcmd):
         lines = [
             "MS5837 %s status" % self.name,
             "Model: %s" % self.model,

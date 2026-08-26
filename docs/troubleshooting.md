@@ -34,7 +34,7 @@ This is normal in ambient air. The sensor reports absolute pressure.
 Use:
 
 ```text
-MS5837_ZERO SENSOR=<name>
+MS_PRESSURE_ZERO SENSOR=<name>
 ```
 
 to work with gauge pressure relative to the current ambient pressure.

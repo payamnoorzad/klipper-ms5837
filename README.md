@@ -87,24 +87,37 @@ i2c_bus: i2c0a
 i2c_address: 118
 ```
 
+## G-code command naming
+
+Klipper's G-code parser does not reliably parse digits in extended command
+names. For that reason, this extension intentionally uses:
+
+```text
+MS_PRESSURE_QUERY
+MS_PRESSURE_ZERO
+MS_PRESSURE_STATUS
+```
+
+instead of command names beginning with `MS5837_`.
+
 ## Commands
 
 Read sensor:
 
 ```text
-MS5837_QUERY SENSOR=chamber_pressure
+MS_PRESSURE_QUERY SENSOR=chamber_pressure
 ```
 
 Set the current pressure as gauge zero:
 
 ```text
-MS5837_ZERO SENSOR=chamber_pressure
+MS_PRESSURE_ZERO SENSOR=chamber_pressure
 ```
 
 Show status and calibration data:
 
 ```text
-MS5837_STATUS SENSOR=chamber_pressure
+MS_PRESSURE_STATUS SENSOR=chamber_pressure
 ```
 
 Example output:
@@ -138,7 +151,7 @@ pressure_unit: psi
 The sensor reports absolute pressure. To convert this into gauge pressure, run:
 
 ```text
-MS5837_ZERO SENSOR=chamber_pressure
+MS_PRESSURE_ZERO SENSOR=chamber_pressure
 ```
 
 Example:
@@ -204,6 +217,7 @@ path: ~/klipper-ms5837
 origin: https://github.com/payamnoorzad/klipper-ms5837.git
 managed_services: klipper
 ```
+
 
 ## Troubleshooting
 
