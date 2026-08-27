@@ -4,7 +4,7 @@ Klipper extension for the **TE Connectivity MS5837** pressure sensor family.
 
 Current support:
 
-- MS5837-02BA
+- MS5837-02BA and MS5837-30BA
 - I2C via Klipper MCU hardware I2C or software I2C
 - Absolute pressure
 - Gauge / zeroed pressure
@@ -15,9 +15,7 @@ Current support:
 - CRC4 status
 - G-code query / zero / status commands
 - Klipper status export for Moonraker / Fluidd / Mainsail
-- Multi-sensor config using `[ms5837 <name>]`
-
-> MS5837-30BA is reserved in the config, but compensation is intentionally not enabled in this release yet.
+- Single or multi-sensor config using `[ms5837]` or `[ms5837 <name>]`
 
 ## Wiring example: RP2040-Zero
 
@@ -102,16 +100,18 @@ instead of command names beginning with `MS5837_`.
 
 ## Commands
 
-Read sensor:
+Read sensor (instantaneous or averaged over $N$ fresh burst samples):
 
 ```text
 MS_PRESSURE_QUERY SENSOR=chamber_pressure
+MS_PRESSURE_QUERY SENSOR=chamber_pressure SAMPLES=5
 ```
 
-Set the current pressure as gauge zero:
+Set the current pressure as gauge zero reference (averaged over $N$ samples to eliminate noise):
 
 ```text
 MS_PRESSURE_ZERO SENSOR=chamber_pressure
+MS_PRESSURE_ZERO SENSOR=chamber_pressure SAMPLES=10
 ```
 
 Show status and calibration data:
@@ -129,6 +129,7 @@ Pressure Absolute: 1001.235 mbar
 Temperature: 27.42 C
 Gauge Pressure: 3.115 mbar
 Depth: 0.0319 m
+Samples: 5
 D1: 6508123
 D2: 8667001
 CRC: OK
